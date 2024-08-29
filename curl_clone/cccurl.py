@@ -1,11 +1,20 @@
 import sys
+import socket
 from urllib.parse import urlparse
 
 def main():
     url = sys.argv[1]
     parsed_url = parse_url(url)
-    request = create_get_request(parsed_url)
-    print_message(parsed_url, request)
+    headers = [
+        f'Host: {parsed_url['host']}',
+        'Accept: */*',
+        'Connection: close'
+    ]
+    request = create_get_request(parsed_url, headers)
+    print(f'connecting to {parsed_url['host']}')
+    print(f'Sending request {request}')
+    response = send_request(request, parsed_url['host'], parsed_url['port'])
+    print(response)
 
 def parse_url(url: str) -> dict:
     parsed_url = urlparse(url)
@@ -22,19 +31,26 @@ def parse_url(url: str) -> dict:
         'path': path,
     }
 
-def create_get_request(parsed_url: dict) -> str:
-    request = (
-        f'GET {parsed_url['path']} '
-        f'HTTP/1.1\n'
-        f'Host: {parsed_url['host']}\n'
-        'Accept: */*'
-    )
+def create_get_request(parsed_url: dict, headers: list[str]) -> str:
+    '''
+    Returns a GET request in string form for the given URL
+    '''
+    http_version = 'HTTP/1.1'
+    start_line = f'GET {parsed_url['path']} {http_version}'
+    request = f'{start_line}\r\n' + '\r\n'.join(headers) + '\r\n\r\n'
     return request
 
-def print_message(parsed_url: dict, request: str) -> None:
-    print(f'connecting to {parsed_url['host']}')
-    print(f'Sending request {request}')
-
+def send_request(request: str, host: str, port: int) -> str:
+    '''
+    Opens a TCP socket connection to the server and sends
+    the given request
+    '''
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((host, port))
+        s.sendall(request.encode('utf-8'))
+        data = s.recv(1024)
+    return data.decode('utf-8')
+        
 
 if __name__ == '__main__':
     main()
