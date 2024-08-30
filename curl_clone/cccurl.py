@@ -6,15 +6,19 @@ def main():
     parser = argparse.ArgumentParser(description='CLI utility to send requests')
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='Enable verbose output')
+    parser.add_argument(
+        '-X', dest='request_method', type=str, help='Request method to use')
     parser.add_argument('url', type=str, help='The URL to send request to')
     args = parser.parse_args()
+    if not args.request_method:
+        args.request_method = 'GET'
     parsed_url = parse_url(args.url)
     headers = [
         f'Host: {parsed_url['host']}',
         'Accept: */*',
         'Connection: close'
     ]
-    request = create_get_request(parsed_url, headers)
+    request = create_request(parsed_url, args.request_method, headers)
     response = send_request(request, parsed_url['host'], parsed_url['port'])
 
     split_response = response.split('\r\n\r\n')
@@ -48,12 +52,12 @@ def parse_url(url: str) -> dict:
         'path': path,
     }
 
-def create_get_request(parsed_url: dict, headers: list[str]) -> str:
+def create_request(parsed_url: dict, request_method: str, headers: list[str]) -> str:
     '''
     Returns a GET request in string form for the given URL
     '''
     http_version = 'HTTP/1.1'
-    start_line = f'GET {parsed_url['path']} {http_version}'
+    start_line = f'{request_method.upper()} {parsed_url['path']} {http_version}'
     request = f'{start_line}\r\n' + '\r\n'.join(headers) + '\r\n\r\n'
     return request
 
