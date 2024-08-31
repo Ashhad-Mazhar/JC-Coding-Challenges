@@ -23,7 +23,7 @@ def main():
 
     split_response = response.split("\r\n\r\n")
     response_body = (
-        split_response[1] if args.request_method.upper() == "HEAD" else ""
+        split_response[1] if args.request_method.upper() != "HEAD" else ""
     )
     verbose_response_headers = get_verbose_response_headers(split_response[0])
 
